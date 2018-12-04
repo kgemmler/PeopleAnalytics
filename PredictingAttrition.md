@@ -111,7 +111,7 @@ cat(dim(tbl), sep = ", ")
 
     ## 1470, 35
 
-This is how the head of the data looks like:
+This is what the head of the data looks like:
 
 ``` r
 print(head(tbl))
@@ -271,7 +271,7 @@ summary(tbl)
 Data cleaning
 -------------
 
-The features Over18 and StandardHours have all entries which contain the same values. Thus they do not add any information to the data, which will allow to distinguish employees. To this end Over18 and StandardHours are removed from dataset. EmployeeNumber might be interesting in order to trace back the predictions to a particular employee. But for the purposes of statistical analysis EmployeeNumber and EmployeeCount are also removed:
+The features Over18 and StandardHours have all entries which contain the same values. Thus they do not add any information to the data that will allow to distinguish employees. To this end Over18 and StandardHours are removed from dataset. EmployeeNumber might be interesting in order to trace back the predictions to a particular employee. But for the purposes of statistical analysis EmployeeNumber and EmployeeCount are also removed:
 
 ``` r
 tbl <- subset(tbl, select = c(-Over18,-StandardHours,-EmployeeCount,-EmployeeNumber))
@@ -329,12 +329,12 @@ corrplot(
 
 ![](PredictingAttrition_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
-It should be stressed again that the strength of the correlation in some cases might be missleading since only linear correlation is displayed. Thus we move next to some exploratory analysis in order to understand the dataset in more detail.
+It should be stressed again that the strength of the correlation in some cases might be misleading since only linear correlation is displayed. Thus we move next to some exploratory analysis in order to understand the dataset in more detail.
 
 Exploratory analysis to extract further correlations
 ----------------------------------------------------
 
-In this section data correlations are visulatized to show relations between selected features.
+In this section data correlations are visualized to show relations between selected features.
 
 ### Plot 1: Does OverTime affect MonthlyIncome and Age affect Attrition?
 
@@ -412,7 +412,7 @@ WorkLifeBalance seems to affect Attrition only for very low rates. There is a le
 Chapter 4: Divide into Training and Test Data
 =============================================
 
-In order to carry out further analysis the data needs to be devided into training data and test data. The training data is used to train the statistical models, the test data is used to calculate predictions making use of the pre-trained models. The predictions obtained are then compared to the response which is also part of the test dataset.
+In order to carry out further analysis the data needs to be divided into training data and test data. The training data is used to train the statistical models, the test data is used to calculate predictions making use of the pre-trained models. The predictions obtained are then compared to the response which is also part of the test dataset.
 
 ``` r
 # Split data into with 80% of data for training and 20% data for testing
@@ -421,7 +421,7 @@ train <- tbl[sample, ]
 test <- tbl[!sample, ]
 ```
 
-This devision into to dataset is useful to avoid overfitting of model parameters on one particular dataset. Goal is certainly to keep both errors minimal in both training and test data. However it that parameter tuning when involving the test set can also introduce an additional bias.
+This division into to dataset is useful to avoid overfitting of model parameters on one particular dataset. Goal is certainly to keep errors minimal in both training and test data. However when parameter tuning on the test data is used, it can introduce an additional bias.
 
 Chapter 5: Warmup: Build Simple Logistic Regression Model
 =========================================================
@@ -518,7 +518,7 @@ auc(test$Attrition, result_A)
 
     ## Area under the curve: 0.7757
 
-The AUC originates from the ROC curve, which scans over different shresholds assessing the false positive rate and true positive rate of the prediction. Thus the AUC is threshold independent. When AUC is &gt; 0.5 it indicates that there is a separation capability present in the model. The model is excellent when AUC is close to 1.
+The AUC originates from the ROC curve, which scans over different thresholds assessing the false positive rate and true positive rate of the prediction. Thus the AUC is threshold independent. When AUC is &gt; 0.5 it indicates that there is a separation capability present in the model. The model is excellent when AUC is close to 1.
 
 Chapter 6: Refine by Using Extended Logistic Regression Model
 =============================================================
@@ -574,7 +574,7 @@ significantParams
     ## YearsSinceLastPromotion         1.170268e-03
     ## YearsWithCurrManager            2.263264e-03
 
-In the next step these significant model parameters are chosen for a refined logistic regression model (Version C). Note that MonthlyIncome is chosen as an additional feature for the refined model since it is one of the few features containing a continuous variable.
+In the next step these significant model parameters are chosen for a refined logisstic regression model (Version C). Note that MonthlyIncome is chosen as an additional feature for the refined model since it is one of the few features containing a continuous variable.
 
 Model C: Refined logistic regression model using statistically significant model parameters
 -------------------------------------------------------------------------------------------
@@ -601,7 +601,7 @@ glm.fit_C <- glm(Attrition ~ Age +
                  family = binomial)
 ```
 
-The output proofs that coefficients of features are statistically significant:
+The output proves that coefficients of features are statistically significant:
 
 ``` r
 print(summary(glm.fit_C))
@@ -705,7 +705,7 @@ The ROC curve indicates threshold prop = 0.16 to be a good choice for calculatin
 conf <- confusionmatrix(test$Attrition, result_C, 0.16)
 ```
 
-The confusion matrix given by
+The confusion matrix is given by
 
 ``` r
 conf[[1]]
@@ -739,7 +739,7 @@ Note that threshold tuning on the test set can also introduce a bias and has to 
 Chapter 7: Evaluate Performance Stability with 10-fold Cross-validation
 =======================================================================
 
-The next step is to evaluate how stable Model C (Refined logistic regression model) performs under different datasets. Since the here data is very limited, such assessment can be performed using k-fold cross-validation. K-fold cross-validation partions data in k-folds and then uses the kth fold as test data set while the remaining folds (excluding the kth fold) are used for training. In total there are k possibilities to assign the test data leading to k different predictive models. This allows to make k predictions and is useful to examine variability of responses. Note that k-fold cross-validation also can be used to reduce variance for the resulting performance estimate by averaging over the k different partitions. For this example 10-fold cross-validation is chosen.
+The next step is to evaluate how stable Model C (Refined logistic regression model) performs under different datasets. Since this here data is very limited, such assessment can be performed using k-fold cross-validation. K-fold cross-validation partions data in k-folds and then uses the kth fold as test data set while the remaining folds (excluding the kth fold) are used for training. In total there are k possibilities to assign the test data leading to k different predictive models. This allows to make k predictions and is useful to examine variability of responses. Note that k-fold cross-validation also can be used to reduce variance for the resulting performance estimate by averaging over the k different partitions. For this example 10-fold cross-validation is chosen.
 
 In order to perform 10-fold cross-validation the function kFoldValidation defined in kfoldvalidation.R is used. The function takes the number of folds, data, modelformula and a threshold as inputs, and outputs a list of vectors containing the AUC, accuracy, sensitivity and specificity.
 
@@ -929,7 +929,9 @@ The the graphical interpretation is the following:
 print(prp(rpart.fit_D, fallen.leaves = TRUE, type=4, extra=1, varlen=0, faclen=0, yesno.yshift=-1))
 ```
 
-![](PredictingAttrition_files/figure-markdown_github/unnamed-chunk-40-1.png) The employer obtain the following about its employees:
+![](PredictingAttrition_files/figure-markdown_github/unnamed-chunk-40-1.png)
+
+The employer obtains the following about their employees:
 
 1.  People without OverTime are generally less affected from Attrition.
 
@@ -983,7 +985,7 @@ confusionmatrix(test$Attrition, result_D[,'Yes'], 0.16)[[1]]
 Model E: A comprehensive tree with implicite feature selection
 --------------------------------------------------------------
 
-Next we want to make use of implicite feature selection. Thus model features are not pre-assigned by hand. We start with the most general decision tree model for this dataset by including all features. Later we continue by pruning the tree to an optimal size in order to avoid overfitting of the data.
+Next we want to make use of implicit feature selection. Thus model features are not pre-assigned by hand. We start with the most general decision tree model for this dataset by including all features. Later we continue by pruning the tree to an optimal size in order to avoid overfitting of the data.
 
 The most general tree classification model reads:
 
@@ -1021,7 +1023,7 @@ rpart.fit_E
     ##          29) YearsInCurrentRole< 2.5 16   5 Yes (0.31250000 0.68750000) *
     ##        15) DailyRate< 975.5 35   5 Yes (0.14285714 0.85714286) *
 
-For better overview it is nice to visualiye the tree for Model E before pruning:
+For better overview it is nice to visualize the tree for Model E before pruning:
 
 ``` r
 print(prp(rpart.fit_E, fallen.leaves = TRUE, type=4, extra=1, varlen=0, faclen=0, yesno.yshift=-1))
@@ -1182,7 +1184,7 @@ auc(test$Attrition, result_prob_F[,'Yes'])
 
     ## Area under the curve: 0.8285
 
-This is a quiet good performance and in the same ballpark the best regression model.
+This is a quite good performance and in the same ballpark the best regression model.
 
 Summary and Outlook
 ===================
