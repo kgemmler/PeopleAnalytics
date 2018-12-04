@@ -4,32 +4,32 @@ Katrin Gemmler
 Dec 3rd, 2018
 
 -   [Introduction](#introduction)
--   [1. Load Libraries and Global Settings](#load-libraries-and-global-settings)
--   [2. Load, Clean and Explore Data](#load-clean-and-explore-data)
+-   [Chapter 1: Load Libraries and Global Settings](#chapter-1-load-libraries-and-global-settings)
+-   [Chapter 2: Load, Clean and Explore Data](#chapter-2-load-clean-and-explore-data)
     -   [Load data and check for missing values](#load-data-and-check-for-missing-values)
     -   [Derive a first understanding of the data](#derive-a-first-understanding-of-the-data)
     -   [Data cleaning](#data-cleaning)
--   [3. Understand Data Correlations](#understand-data-correlations)
+-   [Chapter 3: Understand Data Correlations](#chapter-3-understand-data-correlations)
     -   [Correlation heatmap of features](#correlation-heatmap-of-features)
     -   [Exploratory analysis to extract further correlations](#exploratory-analysis-to-extract-further-correlations)
         -   [Plot 1: Does OverTime affect MonthlyIncome and Age affect Attrition?](#plot-1-does-overtime-affect-monthlyincome-and-age-affect-attrition)
         -   [Plot 2: Does OverTime affect Attrition?](#plot-2-does-overtime-affect-attrition)
         -   [Plot 3: Does JobSatisfaction prevent Attrition?](#plot-3-does-jobsatisfaction-prevent-attrition)
         -   [Plot 4: Does WorkLifeBalance prevent Attrition?](#plot-4-does-worklifebalance-prevent-attrition)
--   [4. Divide into Training and Test Data](#divide-into-training-and-test-data)
--   [5. Warmup: Build Simple Logistic Regression Model](#warmup-build-simple-logistic-regression-model)
+-   [Chapter 4: Divide into Training and Test Data](#chapter-4-divide-into-training-and-test-data)
+-   [Chapter 5: Warmup: Build Simple Logistic Regression Model](#chapter-5-warmup-build-simple-logistic-regression-model)
     -   [Model A: Simple Logistic Regression Model](#model-a-simple-logistic-regression-model)
-        -   [Understand the statistical background](#understand-the-statistical-background)
+    -   [A bit of statistical background](#a-bit-of-statistical-background)
     -   [Predict Attrition with Model A](#predict-attrition-with-model-a)
--   [6. Refine by Using Extended Logistic Regression Model](#refine-by-using-extended-logistic-regression-model)
+-   [Chapter 6: Refine by Using Extended Logistic Regression Model](#chapter-6-refine-by-using-extended-logistic-regression-model)
     -   [Model B: A comprehensive model to identify significant model parameters](#model-b-a-comprehensive-model-to-identify-significant-model-parameters)
     -   [Model C: Refined logistic regression model using statistically significant model parameters](#model-c-refined-logistic-regression-model-using-statistically-significant-model-parameters)
     -   [Assess Predictive Performance of Model C](#assess-predictive-performance-of-model-c)
--   [7. Evaluate Performance Stability with 10-fold Cross-validation](#evaluate-performance-stability-with-10-fold-cross-validation)
--   [8. Use Tree-based methods](#use-tree-based-methods)
+-   [Chapter 7: Evaluate Performance Stability with 10-fold Cross-validation](#chapter-7-evaluate-performance-stability-with-10-fold-cross-validation)
+-   [Chapter 8: Use Tree-based methods](#chapter-8-use-tree-based-methods)
     -   [Model D: A basic tree-based model with hand-selected features](#model-d-a-basic-tree-based-model-with-hand-selected-features)
     -   [Model E: A comprehensive tree with implicite feature selection](#model-e-a-comprehensive-tree-with-implicite-feature-selection)
--   [9. Improve Tree-based Prediction through Random Forest](#improve-tree-based-prediction-through-random-forest)
+-   [Chapter 9: Improve Tree-based Prediction through Random Forest](#chapter-9-improve-tree-based-prediction-through-random-forest)
     -   [Model F: General Random Forest model](#model-f-general-random-forest-model)
 -   [Summary and Outlook](#summary-and-outlook)
     -   [Summarizing Results and Recommendations](#summarizing-results-and-recommendations)
@@ -40,8 +40,8 @@ Introduction
 
 The following analysis is based on a fictional human resource database (Source: IBM Analytics). In particular the dataset includes information about the employee attrition among various other features for employees of the given fictional company. Goal of the following analysis is to predict employees who are leaving the company and identify the main drivers for their leaving. The analysis leverages several machine learning tools such as logistic regression, 10-fold crossvalidation and tree-based analysis methods including random forest.
 
-1. Load Libraries and Global Settings
-=====================================
+Chapter 1: Load Libraries and Global Settings
+=============================================
 
 Load all the additional libraries required, load file containing custom functions and set initial global settings:
 
@@ -66,8 +66,8 @@ source("src/kfoldvalidation.R")
 set.seed(1234)
 ```
 
-2. Load, Clean and Explore Data
-===============================
+Chapter 2: Load, Clean and Explore Data
+=======================================
 
 Load data and check for missing values
 --------------------------------------
@@ -277,8 +277,8 @@ The features Over18 and StandardHours have all entries which contain the same va
 tbl <- subset(tbl, select = c(-Over18,-StandardHours,-EmployeeCount,-EmployeeNumber))
 ```
 
-3. Understand Data Correlations
-===============================
+Chapter 3: Understand Data Correlations
+=======================================
 
 Correlation heatmap of features
 -------------------------------
@@ -409,8 +409,8 @@ plot4
 
 WorkLifeBalance seems to affect Attrition only for very low rates. There is a less pronounced correlation for this feature.
 
-4. Divide into Training and Test Data
-=====================================
+Chapter 4: Divide into Training and Test Data
+=============================================
 
 In order to carry out further analysis the data needs to be devided into training data and test data. The training data is used to train the statistical models, the test data is used to calculate predictions making use of the pre-trained models. The predictions obtained are then compared to the response which is also part of the test dataset.
 
@@ -423,8 +423,8 @@ test <- tbl[!sample, ]
 
 This devision into to dataset is useful to avoid overfitting of model parameters on one particular dataset. Goal is certainly to keep both errors minimal in both training and test data. However it that parameter tuning when involving the test set can also introduce an additional bias.
 
-5. Warmup: Build Simple Logistic Regression Model
-=================================================
+Chapter 5: Warmup: Build Simple Logistic Regression Model
+=========================================================
 
 We choose a simple logistic regression model to be the first statistical model in order to predict Attrition. This choice is motivated by the fact that we are looking at a classification problem with a binary response (Attrition: Yes/No).
 
@@ -470,7 +470,8 @@ summary(glm.fit_A)
 
 All parameters in Model A are highly statstically significant, indicated by p-value Pr(&gt;|z|) and the stars on the side (see sigificance code above for explanation).
 
-### Understand the statistical background
+A bit of statistical background
+-------------------------------
 
 R chooses Z-statistics as test statistics which assumes a normal distribution with unknown mean and known standard deviation. The null hypothesis corresponds to the data not being dependent on the features X=(OverTime, MonthlyIncome, JobSatisfaction, Age), since the corresponding slope parameter is zero for null hypothesis. The null hypothesis is rejected for p-value &lt; 0.05. In case of rejection the dependence on X is significant for the model.
 
@@ -519,8 +520,8 @@ auc(test$Attrition, result_A)
 
 The AUC originates from the ROC curve, which scans over different shresholds assessing the false positive rate and true positive rate of the prediction. Thus the AUC is threshold independent. When AUC is &gt; 0.5 it indicates that there is a separation capability present in the model. The model is excellent when AUC is close to 1.
 
-6. Refine by Using Extended Logistic Regression Model
-=====================================================
+Chapter 6: Refine by Using Extended Logistic Regression Model
+=============================================================
 
 The next goal is to improve the separation capability of the simple logistic regression model (Model A) by introducing more features.
 
@@ -735,8 +736,8 @@ cat("Model specificity is:", format(conf[[4]] * 100, digits=3),"%.\n")
 
 Note that threshold tuning on the test set can also introduce a bias and has to be applied with care. Overall Model C is capable to identify indiviual employees that are leaving the company.
 
-7. Evaluate Performance Stability with 10-fold Cross-validation
-===============================================================
+Chapter 7: Evaluate Performance Stability with 10-fold Cross-validation
+=======================================================================
 
 The next step is to evaluate how stable Model C (Refined logistic regression model) performs under different datasets. Since the here data is very limited, such assessment can be performed using k-fold cross-validation. K-fold cross-validation partions data in k-folds and then uses the kth fold as test data set while the remaining folds (excluding the kth fold) are used for training. In total there are k possibilities to assign the test data leading to k different predictive models. This allows to make k predictions and is useful to examine variability of responses. Note that k-fold cross-validation also can be used to reduce variance for the resulting performance estimate by averaging over the k different partitions. For this example 10-fold cross-validation is chosen.
 
@@ -818,8 +819,8 @@ cat("Model average specificity (with threshold propobabiltiy = 0.16) is:", mean(
 
     ## Model average specificity (with threshold propobabiltiy = 0.16) is: 0.7560568
 
-8. Use Tree-based methods
-=========================
+Chapter 8: Use Tree-based methods
+=================================
 
 In this chapter makes use of decision trees to solve the classification problem stated above. The goal of a classifcation tree is to split up data for the features assessed, at each step that best splits are chosen maximizing purity in each node.
 
@@ -1111,8 +1112,8 @@ confusionmatrix(test$Attrition, result_E[,'Yes'], 0.16)[[1]]
     ##      No    229   28
     ##      Yes    22   17
 
-9. Improve Tree-based Prediction through Random Forest
-======================================================
+Chapter 9: Improve Tree-based Prediction through Random Forest
+==============================================================
 
 The predictive performance of decision trees can be improved significantly by aggregating multiple decision trees. Common methods are bagging, random forests, and boosting. The analysis here restricts on random forest. Random forest uses bootstrap aggregation just like bagging, but extends bagging with additional a variable (and random) feature selection. Random forest helps to reduce the variance compared to a single decision tree. Random forest can also handle dataset with high dimensions well.
 
@@ -1258,19 +1259,11 @@ Next Steps Towards a Real People Analytics Software
 ---------------------------------------------------
 
 1.  Refine machine learning techniques
-
--   Optimize parameters of assessed models
-
--   Try other machine learning techiques e.g. neural networks
-
-1.  Improvement of content:
-
--   Use a more HR data base with more features and data
-
--   Create more predictions e.g. predict employer performance
-
-1.  Improvement of frontend to make a usable model
-
--   Create an interface for clients to upload data
-
--   Create an automated output for clients e.g. dashboard output
+    -   Optimize parameters of assessed models
+    -   Try other machine learning techiques e.g. neural networks
+2.  Improvement of content
+    -   Use a more HR data base with more features and data
+    -   Create more predictions e.g. predict employer performance
+3.  Improvement of frontend to make a usable model
+    -   Create an interface for clients to upload data
+    -   Create an automated output for clients e.g. dashboard output
