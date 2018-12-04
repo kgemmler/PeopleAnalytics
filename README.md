@@ -6,4 +6,6 @@ The following analysis is based on a fictional human resource database (Source: 
 The analysis can be found at the following link:
 [Analysis](PredictingAttrition.md)
 
-To run and modify the analysis one can downlowd the dataset and the Rmd Notebook. The Notebook uses functions defined in the source directory.
+To run and modify the analysis one can downlowd the dataset in directory data and the Rmd Notebook. The Notebook uses functions defined in the source directory src.
+
+Source of the original dataset: IBM Analytics
