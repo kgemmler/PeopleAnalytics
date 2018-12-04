@@ -3,6 +3,38 @@ People Analytics Toy Model - Predicting Attrition with Machine Learning Tools
 Katrin Gemmler
 Dec 3rd, 2018
 
+-   [Introduction](#introduction)
+-   [1. Load Libraries and Global Settings](#load-libraries-and-global-settings)
+-   [2. Load, Clean and Explore Data](#load-clean-and-explore-data)
+    -   [Load data and check for missing values](#load-data-and-check-for-missing-values)
+    -   [Derive a first understanding of the data](#derive-a-first-understanding-of-the-data)
+    -   [Data cleaning](#data-cleaning)
+-   [3. Understand Data Correlations](#understand-data-correlations)
+    -   [Correlation heatmap of features](#correlation-heatmap-of-features)
+    -   [Exploratory analysis to extract further correlations](#exploratory-analysis-to-extract-further-correlations)
+        -   [Plot 1: Does OverTime affect MonthlyIncome and Age affect Attrition?](#plot-1-does-overtime-affect-monthlyincome-and-age-affect-attrition)
+        -   [Plot 2: Does OverTime affect Attrition?](#plot-2-does-overtime-affect-attrition)
+        -   [Plot 3: Does JobSatisfaction prevent Attrition?](#plot-3-does-jobsatisfaction-prevent-attrition)
+        -   [Plot 4: Does WorkLifeBalance prevent Attrition?](#plot-4-does-worklifebalance-prevent-attrition)
+-   [4. Divide into Training and Test Data](#divide-into-training-and-test-data)
+-   [5. Warmup: Build Simple Logistic Regression Model](#warmup-build-simple-logistic-regression-model)
+    -   [Model A: Simple Logistic Regression Model](#model-a-simple-logistic-regression-model)
+        -   [Understand the statistical background](#understand-the-statistical-background)
+    -   [Predict Attrition with Model A](#predict-attrition-with-model-a)
+-   [6. Refine by Using Extended Logistic Regression Model](#refine-by-using-extended-logistic-regression-model)
+    -   [Model B: A comprehensive model to identify significant model parameters](#model-b-a-comprehensive-model-to-identify-significant-model-parameters)
+    -   [Model C: Refined logistic regression model using statistically significant model parameters](#model-c-refined-logistic-regression-model-using-statistically-significant-model-parameters)
+    -   [Assess Predictive Performance of Model C](#assess-predictive-performance-of-model-c)
+-   [7. Evaluate Performance Stability with 10-fold Cross-validation](#evaluate-performance-stability-with-10-fold-cross-validation)
+-   [8. Use Tree-based methods](#use-tree-based-methods)
+    -   [Model D: A basic tree-based model with hand-selected features](#model-d-a-basic-tree-based-model-with-hand-selected-features)
+    -   [Model E: A comprehensive tree with implicite feature selection](#model-e-a-comprehensive-tree-with-implicite-feature-selection)
+-   [9. Improve Tree-based Prediction through Random Forest](#improve-tree-based-prediction-through-random-forest)
+    -   [Model F: General Random Forest model](#model-f-general-random-forest-model)
+-   [Summary and Outlook](#summary-and-outlook)
+    -   [Summarizing Results and Recommendations](#summarizing-results-and-recommendations)
+    -   [Next Steps Towards a Real People Analytics Software](#next-steps-towards-a-real-people-analytics-software)
+
 Introduction
 ============
 

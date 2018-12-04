@@ -3,7 +3,8 @@ title: "People Analytics Toy Model - Predicting Attrition with Machine Learning 
 author: "Katrin Gemmler"
 date: "Dec 3rd, 2018"
 output:
-  github_document
+  github_document:
+    toc: true
 #  html_notebook:
 #    toc: yes
 #    toc_float: yes
