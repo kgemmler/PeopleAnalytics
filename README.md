@@ -1,3 +1,3 @@
 # PeopleAnalytics
 
-[test](PredictingAttrition.Rmd)
+[test](PredictingAttrition.nb.html)
