@@ -1,7 +1,7 @@
 People Analytics Toy Model - Predicting Attrition with Machine Learning Tools
 ================
 Katrin Gemmler
-Dec 2nd, 2018
+Dec 3rd, 2018
 
 Introduction
 ============
@@ -15,67 +15,17 @@ Load all the additional libraries required, load file containing custom function
 
 ``` r
 Loadlibraries = function() {
-  library(tidyverse)    # for extension from R base, e.g. ggplot
-  library(corrplot)     # for correlation plot
-  library(ROCR)         # for ROC curve
-  library(pROC)         # for AUC
-  library(rpart)        # for tree based classification with rpart
-  library(rpart.plot)   # for tree plots with rpart
-  library(randomForest) # for randomforest 
+  shh <- suppressPackageStartupMessages
+  shh(library(tidyverse))    # for extension from R base, e.g. ggplot
+  shh(library(corrplot))     # for correlation plot
+  shh(library(ROCR))         # for ROC curve
+  shh(library(pROC))         # for AUC
+  shh(library(rpart))        # for tree based classification with rpart
+  shh(library(rpart.plot))   # for tree plots with rpart
+  shh(library(randomForest)) # for randomforest 
 }
 Loadlibraries()
-```
 
-    ## ── Attaching packages ─────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
-
-    ## ✔ ggplot2 3.0.0     ✔ purrr   0.2.5
-    ## ✔ tibble  1.4.2     ✔ dplyr   0.7.6
-    ## ✔ tidyr   0.8.1     ✔ stringr 1.3.1
-    ## ✔ readr   1.1.1     ✔ forcats 0.3.0
-
-    ## ── Conflicts ────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-
-    ## corrplot 0.84 loaded
-
-    ## Loading required package: gplots
-
-    ## KernSmooth 2.23 loaded
-    ## Copyright M. P. Wand 1997-2009
-
-    ## 
-    ## Attaching package: 'gplots'
-
-    ## The following object is masked from 'package:stats':
-    ## 
-    ##     lowess
-
-    ## Type 'citation("pROC")' for a citation.
-
-    ## 
-    ## Attaching package: 'pROC'
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     cov, smooth, var
-
-    ## randomForest 4.6-14
-
-    ## Type rfNews() to see new features/changes/bug fixes.
-
-    ## 
-    ## Attaching package: 'randomForest'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     combine
-
-    ## The following object is masked from 'package:ggplot2':
-    ## 
-    ##     margin
-
-``` r
 # Loading all custom functions
 source("src/utils.R")
 source("src/kfoldvalidation.R")

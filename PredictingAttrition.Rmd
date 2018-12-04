@@ -1,7 +1,7 @@
 ---
 title: "People Analytics Toy Model - Predicting Attrition with Machine Learning Tools"
 author: "Katrin Gemmler"
-date: "Dec 2nd, 2018"
+date: "Dec 3rd, 2018"
 output:
   github_document
 #  html_notebook:
@@ -16,15 +16,16 @@ The following analysis is based on a fictional human resource database (Source: 
 
 # 1. Load Libraries and Global Settings
 Load all the additional libraries required, load file containing custom functions and set initial global settings:
-```{r, warning=FALSE, error=FALSE}
+```{r, warning=FALSE, error=FALSE, results='hide', messages=FALSE}
 Loadlibraries = function() {
-  library(tidyverse)    # for extension from R base, e.g. ggplot
-  library(corrplot)     # for correlation plot
-  library(ROCR)         # for ROC curve
-  library(pROC)         # for AUC
-  library(rpart)        # for tree based classification with rpart
-  library(rpart.plot)   # for tree plots with rpart
-  library(randomForest) # for randomforest 
+  shh <- suppressPackageStartupMessages
+  shh(library(tidyverse))    # for extension from R base, e.g. ggplot
+  shh(library(corrplot))     # for correlation plot
+  shh(library(ROCR))         # for ROC curve
+  shh(library(pROC))         # for AUC
+  shh(library(rpart))        # for tree based classification with rpart
+  shh(library(rpart.plot))   # for tree plots with rpart
+  shh(library(randomForest)) # for randomforest 
 }
 Loadlibraries()
 
@@ -622,17 +623,17 @@ The employer can use information about risk target groups (see tree plots relate
                    
 ## Next Steps Towards a Real People Analytics Software
 
-A) Refine machine learning techniques
+1. Refine machine learning techniques
 - Optimize parameters of assessed models
 
 - Try other machine learning techiques e.g. neural networks
 
-B) Improvement of content:
+2. Improvement of content:
 - Use a more HR data base with more features and data
 
 - Create more predictions e.g. predict employer performance
 
-C) Improvement of frontend to make a usable model
+3. Improvement of frontend to make a usable model
 - Create an interface for clients to upload data
 
 - Create an automated output for clients e.g. dashboard output
