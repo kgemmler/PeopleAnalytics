@@ -1,0 +1,641 @@
+---
+title: "People Analytics Toy Model - Predicting Attrition with Machine Learning Tools"
+author: "Katrin Gemmler"
+date: "Dec 2nd, 2018"
+output:
+  html_notebook:
+    toc: yes
+    toc_float: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+# Introduction
+The following analysis is based on a fictional human resource database (Source: IBM Analytics). In particular the dataset includes information about the employee attrition among various other features for employees of the given fictional company. Goal of the following analysis is to predict employees who are leaving the company and identify the main drivers for their leaving. The analysis leverages several machine learning tools such as logistic regression, 10-fold crossvalidation and tree-based analysis methods including random forest.
+
+# 1. Load Libraries and Global Settings
+Load all the additional libraries required, load file containing custom functions and set initial global settings:
+```{r, warning=FALSE, error=FALSE}
+Loadlibraries = function() {
+  library(tidyverse)    # for extension from R base, e.g. ggplot
+  library(corrplot)     # for correlation plot
+  library(ROCR)         # for ROC curve
+  library(pROC)         # for AUC
+  library(rpart)        # for tree based classification with rpart
+  library(rpart.plot)   # for tree plots with rpart
+  library(randomForest) # for randomforest 
+}
+Loadlibraries()
+
+# Loading all custom functions
+source("src/utils.R")
+source("src/kfoldvalidation.R")
+
+# Set seed for random number generator allowing random objects to be reproduced
+set.seed(1234)
+```
+# 2. Load, Clean and Explore Data 
+
+## Load data and check for missing values
+Load data from file.csv and make sure to capture missing values:
+```{r}
+# Store data in variable tbl (table) and capture data missing values by replacing "" with NA
+tbl <- read.csv("data/EmployeeAttrition.csv", header=TRUE, na.strings=c(""))
+```
+
+Check the data for missing values:
+```{r}
+# Count missing values
+na_count <- rowSums(data.frame(t(colSums(is.na(tbl)))))
+#  Report result
+cat("There are ", na_count, " missing values in the dataset.")
+```
+No pre-cleaning due to missing values is required in this dataset.
+
+## Derive a first understanding of the data
+
+The header names of the data are:
+```{r}
+cat(names(tbl), sep=", ")
+```
+The dimension of the data set (rows, columns) is:
+```{r}
+cat(dim(tbl), sep = ", ")
+```
+This is how the head of the data looks like:
+```{r}
+print(head(tbl))
+```
+R's summary for the data reads:
+```{r}
+summary(tbl)
+```
+
+## Data cleaning 
+
+The features Over18 and StandardHours have all entries which contain the same values. Thus they do not add any information to the data, which will allow to distinguish employees. To this end Over18 and StandardHours are removed from dataset. EmployeeNumber might be interesting in order to trace back the predictions to a particular employee. But for the purposes of statistical analysis EmployeeNumber and EmployeeCount are also removed:
+
+```{r}
+tbl <- subset(tbl, select = c(-Over18,-StandardHours,-EmployeeCount,-EmployeeNumber))
+```
+
+
+
+# 3. Understand Data Correlations
+
+
+##Correlation heatmap of features
+
+First we look at standard correlation coefficients associated with a linear relationship of features.
+
+Preprocessing data for correlation plots:
+```{r}
+# Make sure all values have numerical (necessary for corrplot()). Convert categorical entries into numerical ones first. 
+tbl.numpart1 <- select_if(tbl, is.numeric)
+tbl.fac <- select_if(tbl, is.factor)
+tbl.numpart2 <- as.data.frame(sapply(tbl.fac, as.numeric))
+tbl.numfull <- cbind(tbl.numpart2,tbl.numpart1)
+```
+Brief cross-check if data was reattached correctly by looking at dimensions of dataframes before and after modification:
+```{r}
+# Compare if old and new dimensions are matching
+cat("The dimensions of the modified and original dataset: \n [",dim(tbl.numfull),"]","[",dim(tbl),"]")
+```
+
+
+Visualize standard correlation between all features:
+```{r}
+corrplot(cor(tbl.numfull), tl.cex = 0.45)
+```
+
+Select correlation for Attrition for a closer look:
+```{r}
+corrplot(
+  cor(tbl.numfull[1:length(tbl.numfull),])
+  [1:length(tbl.numfull),1, drop=FALSE],
+  cl.pos='r',
+  cl.align.text = 'l',
+  cl.cex = 0.5,
+  cl.ratio = 2,
+  tl.cex = 0.45
+)
+```
+
+It should be stressed again that the strength of the correlation in some cases might be missleading since only linear correlation is displayed. Thus we move next to some exploratory analysis in order to understand the dataset in more detail.
+
+## Exploratory analysis to extract further correlations
+
+In this section data correlations are visulatized to show relations between selected features.
+
+### Plot 1: Does OverTime affect MonthlyIncome and Age affect Attrition?
+
+```{r}
+plot1 <- ggplot() + 
+  geom_point(data = filter(tbl, Attrition == "No"), 
+             mapping = aes(x = Age, y = MonthlyIncome, color = "green")) +
+  geom_point(data = filter(tbl, Attrition == "Yes"), 
+             mapping = aes(x = Age, y = MonthlyIncome, color = "red")) + 
+  scale_colour_manual(values = c("green","red")) +
+  xlab("Age") + ylab("MonthlyIncome") + 
+  ggtitle("MonthlyIncome and Age affect Attrition") +
+  scale_colour_manual(name = 'Attrition', 
+                      values = c('green'='green','red'='red'), 
+                      labels = c('No','Yes'))
+plot1
+```
+
+It is easy to read that employees with low Age and low MonthlyIncome are more prone to Attrition.
+
+### Plot 2: Does OverTime affect Attrition?
+
+```{r}
+plot2 <- ggplot(data = tbl,aes(x = OverTime, ..count..)) +
+  geom_bar(aes(fill = Attrition), position = "dodge") +
+  scale_fill_manual(values = c("palegreen","red")) +  
+  ggtitle("OverTime leads to increased Attrition rate")
+plot2
+```
+
+Clearly employees with OverTime are more likely to leave the company.
+
+### Plot 3: Does JobSatisfaction prevent Attrition?
+```{r}
+plot3 <- ggplot() +
+  geom_bar(data = tbl, aes(x = JobSatisfaction, y = ..count.., fill = Attrition), position = "fill") + 
+  scale_y_continuous(labels = scales::percent) +
+  ylab("percent") +
+  scale_fill_manual(values = c("palegreen","red")) +
+  ggtitle("Increase in JobSatisfaction prevents Attrition")
+plot3
+```
+
+JobSatisfaction also does seem to play a role. Increasing the JobSatisfaction of employees seems to lead to a lower rate of Attrition.
+
+### Plot 4: Does WorkLifeBalance prevent Attrition?
+```{r}
+plot4 <- ggplot() + 
+  geom_bar(data=tbl, aes(x = WorkLifeBalance, y = ..count.., fill = Attrition), position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("palegreen","red")) + 
+  ylab("percent") +
+  ggtitle("Very low WorkLifeBalance shows high Attrition")
+plot4
+```
+
+WorkLifeBalance seems to affect Attrition only for very low rates. There is a less pronounced correlation for this feature.
+
+# 4. Divide into Training and Test Data
+
+In order to carry out further analysis the data needs to be devided into training data and test data. The training data is used to train the statistical models, the test data is used to calculate predictions making use of the pre-trained models. The predictions obtained are then compared to the response which is also part of the test dataset.
+
+```{r}
+# Split data into with 80% of data for training and 20% data for testing
+sample <- sample(c(TRUE, FALSE), nrow(tbl), replace = T, prob = c(0.8,0.2))
+train <- tbl[sample, ]
+test <- tbl[!sample, ]
+```
+
+This devision into to dataset is useful to avoid overfitting of model parameters on one particular dataset. Goal is certainly to keep both errors minimal in both training and test data. However it that parameter tuning when involving the test set can also introduce an additional bias.
+
+# 5. Warmup: Build Simple Logistic Regression Model
+
+We choose a simple logistic regression model to be the first statistical model in order to predict Attrition. This choice is motivated by the fact that we are looking at a classification problem with a binary response (Attrition: Yes/No).
+
+## Model A: Simple Logistic Regression Model
+
+The model predictors (OverTime, MonthlyIncome, JobSatisfaction and Age) are motivated by the exploratory analysis shown above. Response of the model is Attrition, which we aim to predict with this model later on. 
+```{r}
+# Model A
+glm.fit_A <- glm(Attrition ~ OverTime + MonthlyIncome + JobSatisfaction + Age, 
+                 data = train, family = binomial)
+
+summary(glm.fit_A)
+```
+All parameters in Model A are highly statstically significant, indicated by p-value Pr(>|z|) and the stars on the side (see sigificance code above for explanation). 
+
+
+### Understand the statistical background 
+
+R chooses Z-statistics as test statistics which assumes a normal distribution with unknown mean and known standard deviation. The null hypothesis corresponds to the data not being dependent on the features 
+X=(OverTime, MonthlyIncome, JobSatisfaction, Age), since the corresponding slope parameter is zero for null hypothesis. The null hypothesis is rejected for p-value < 0.05. In case of rejection the dependence on X is significant for the model.
+
+## Predict Attrition with Model A
+
+Next the test data is used to predict Attrition. The relevant features from test data set need to be extracted first:
+```{r}
+dfrmtest_A <- test[, c("OverTime", "MonthlyIncome", "JobSatisfaction", "Age")]
+```
+
+Then the prediction for Attrition is calculated with the test dataset using Model A:
+```{r}
+result_A <- predict(glm.fit_A, newdata = dfrmtest_A, type = "response")
+```
+
+Predicted values for Attrition (see second row values) are given in terms of probablities: 
+```{r}
+head(result_A)
+```
+Depending on the threshold probabililty prop to be choosen (e.g. in standard setting prop= 0.5) a value > prop indicates a YES and a value < prop indicates a NO.
+
+Comparing these predictions to the actual Attrition of the test data set one can see that the first values are predicted correctly:
+```{r}
+head(test$Attrition)
+```
+For a quick assessment of the model performance, we can compute the area under the curve (AUC):
+```{r}
+auc(test$Attrition, result_A)
+```
+
+The AUC originates from the ROC curve, which scans over different shresholds assessing the false positive rate and true positive rate of the prediction. Thus the AUC is threshold independent. When AUC is > 0.5 it indicates that there is a separation capability present in the model. The model is excellent when AUC is close to 1.
+
+
+# 6. Refine by Using Extended Logistic Regression Model
+
+The next goal is to improve the separation capability of the simple logistic regression model (Model A) by introducing more features.
+
+## Model B: A comprehensive model to identify significant model parameters
+
+Model B contains considers features present in the dataset. 
+```{r}
+glm.fit_B <- glm(Attrition ~ ., data = train, family = binomial)
+```
+
+The idea is to identify all model parameters which are highly statistical significant:
+```{r}
+# Extract model parameters with Pr(>|z|)`<0.01 
+temp <- as.data.frame(summary(glm.fit_B)$coefficients)
+significantParams <- temp[temp$`Pr(>|z|)`<0.01,]
+significantParams
+```
+
+In the next step these significant model parameters are chosen for a refined logistic regression model (Version C). Note that MonthlyIncome is chosen as an additional feature for the refined model since it is one of the few features containing a continuous variable.
+
+## Model C: Refined logistic regression model using statistically significant model parameters
+
+The refined model then reads:
+```{r}
+glm.fit_C <- glm(Attrition ~ Age +
+                   BusinessTravel + 
+                   DistanceFromHome +
+                   EnvironmentSatisfaction +
+                   JobInvolvement + 
+                   JobSatisfaction +
+                   MaritalStatus + 
+                   MonthlyIncome +
+                   NumCompaniesWorked +
+                   OverTime +  
+                   WorkLifeBalance +
+                   YearsAtCompany +
+                   YearsInCurrentRole +
+                   YearsSinceLastPromotion +
+                   YearsWithCurrManager,
+                 data = train,
+                 family = binomial)
+```
+
+The output proofs that coefficients of features are statistically significant:
+```{r}
+print(summary(glm.fit_C))
+```
+
+## Assess Predictive Performance of Model C
+
+As explained above threshold independent model performance can be assessed via calulating the AUC:
+```{r}
+# Extract relevant data from test data set in order to calculate prediction
+dfrmtest_C <- test[, c("Age",
+                       "BusinessTravel",
+                       "DistanceFromHome",
+                       "EnvironmentSatisfaction",
+                       "JobInvolvement", 
+                       "JobSatisfaction",
+                       "MaritalStatus", 
+                       "MonthlyIncome",
+                       "NumCompaniesWorked",
+                       "OverTime",
+                       "WorkLifeBalance", 
+                       "YearsAtCompany",
+                       "YearsInCurrentRole",
+                       "YearsSinceLastPromotion",
+                       "YearsWithCurrManager")]
+
+# Calculate predictions using test data extract
+result_C <- predict(glm.fit_C, newdata=dfrmtest_C, type="response")
+
+# Derive area under the ROC curve (AUC), syntax (response, predictor)
+auc(test$Attrition, result_C)
+```
+
+The value of Model C is higher compared to the value of Model A and thus indicates improved separation capability for the refined version (Model C).
+
+
+Next we have a closer look at the ROC curve of Model C is given by true positive rate (sensitivity) over false positive rate (1 - specificity):
+```{r}
+# using function rocplot(pred,truth,...) from file utils.R
+rocplot(result_C, 
+        test$Attrition,
+        colorize=TRUE, 
+        print.cutoffs.at=seq(0,1,by=0.1), 
+        text.adj=c(-0.2,1.7),
+        main="ROC Curve")
+```
+
+The ROC curve indicates threshold prop = 0.16 to be a good choice for calculating performance specifics. For this specific threshold confusion matrix, accurarcy, sensitivity and specificity of Model C can be calculated:
+```{r}
+# Use function confusionmatrix(testdata, modelpred, threshold) from file utils.R The function returns the confusion matrix, accuracy, sensitivity and specificity as list
+conf <- confusionmatrix(test$Attrition, result_C, 0.16)
+```
+
+The confusion matrix given by
+```{r}
+conf[[1]]
+```
+```{r}
+cat("Model accuracy is:", format(conf[[2]] * 100, digits=3),"%.\n")
+cat("Model sensitivity is:", format(conf[[3]] * 100, digits=3),"%.\n")
+cat("Model specificity is:", format(conf[[4]] * 100, digits=3),"%.\n")
+```
+Note that threshold tuning on the test set can also introduce a bias and has to be applied with care. Overall Model C is capable to identify indiviual employees that are leaving the company. 
+
+# 7. Evaluate Performance Stability with 10-fold Cross-validation
+
+The next step is to evaluate how stable Model C (Refined logistic regression model) performs under different datasets.   Since the here data is very limited, such assessment can be performed using k-fold cross-validation. K-fold cross-validation partions data in k-folds and then uses the kth fold as test data set while the remaining folds (excluding the kth fold) are used for training. In total there are k possibilities to assign the test data leading to k different predictive models. This allows to make k predictions and is useful to examine variability of responses. Note that k-fold cross-validation also can be used to reduce variance for the resulting performance estimate by averaging over the k different partitions. For this example 10-fold cross-validation is chosen.
+
+In order to perform 10-fold cross-validation the function kFoldValidation defined in kfoldvalidation.R is used. The function takes the number of folds, data, modelformula and a threshold as inputs, and outputs a list of vectors containing the AUC, accuracy, sensitivity and specificity.
+```{r}
+modelfmla <- Attrition ~ Age +
+                        BusinessTravel + 
+                        DistanceFromHome +
+                        EnvironmentSatisfaction +
+                        JobInvolvement + 
+                        JobSatisfaction +
+                        MaritalStatus + 
+                        MonthlyIncome +
+                        NumCompaniesWorked +
+                        OverTime +  
+                        WorkLifeBalance +
+                        YearsAtCompany +
+                        YearsInCurrentRole +
+                        YearsSinceLastPromotion +
+                        YearsWithCurrManager
+
+validationresult <- kFoldValidation(10,tbl,modelfmla,0.16)
+vector_auc <- validationresult[[1]]
+vector_acc <- validationresult[[2]]
+vector_sen <- validationresult[[3]]
+vector_spe <- validationresult[[4]]
+```
+Boxplot shows the variability in AUC:
+```{r}
+boxplot(vector_auc, col="green", border="black", horizontal=FALSE, 
+        xlab="AUC",  ylim = c(0.65, 0.95), main="AUC in 10 fold CV\n - threshold independent")
+```
+
+The mean for the AUC resulting from 10-fold cross-validation is given by:
+```{r}
+cat("Model average AUC is:", mean(vector_auc),"\n")
+```
+
+Similarly variability for accuracy, sensitivity and specificity can be displayed for specific threshold (here: prop = 0.16)
+
+```{r}
+# Reshape results to use for boxplot
+res_cv <- c(vector_acc, vector_sen, vector_spe)
+category <- c(rep("Accuracy", 10), rep("Sensitivity", 10), rep("Specificity", 10))
+category <- factor(category, levels=c("Accuracy", "Sensitivity", "Specificity"))
+
+# Perform boxplot
+boxplot(res_cv ~ category, col=c("skyblue2","blue","darkblue"), pch=19, ylim = c(0.65, 0.95),
+        main="Model performance stability in 10 fold CV\n - threshold dependent prop=0.16")
+```
+
+The corresponding means for threshold prop = 0.16 are given by:
+
+```{r}
+cat("Model average accuracy (with threshold propobabiltiy = 0.16) is:", mean(vector_acc),"\n")
+cat("Model average sensitivity (with threshold propobabiltiy = 0.16) is:", mean(vector_sen),"\n")
+cat("Model average specificity (with threshold propobabiltiy = 0.16) is:", mean(vector_spe),"\n")
+```
+
+
+
+# 8. Use Tree-based methods
+
+In this chapter makes use of decision trees to solve the classification problem stated above. The goal of a classifcation tree is to split up data for the features assessed, at each step that best splits are chosen maximizing purity in each node. 
+
+Generally decision trees have some advantages over logistic regression: First, trees allow to graphically interpret model drivers. Second, if model features are chose to be not hand-selected, trees can perform implicit feature selection. The trade-off is that tree-algorithms are generally "greedy". This means the best data split is assessed at the particular given step only. The algorithm does not look ahead and choose a data split which would lead to a better classification result in a future step of the tree-building process. Additionally a disadvantage is that considering a single tree is often less robust to changes in the dataset.
+
+## Model D: A basic tree-based model with hand-selected features
+
+For this basic hand-selected tree model (Model D), we select the same features chosen in the simple regression (Model A). Note that choosing instead the features of Model C, would not lead to an improved performance. Thus we restrict to the most simple version here:
+```{r}
+rpart.fit_D <- rpart(Attrition ~ OverTime + MonthlyIncome + JobSatisfaction + Age,  data = train, method="class") 
+# Note: Instead of rpart() is it also possible to use tree() from the library(tree).
+rpart.fit_D
+```
+
+More information can be obtained using R's summary:
+```{r}
+summary(rpart.fit_D)
+```
+
+The the graphical interpretation is the following:
+```{r, results='hide', fig.keep='all'}
+print(prp(rpart.fit_D, fallen.leaves = TRUE, type=4, extra=1, varlen=0, faclen=0, yesno.yshift=-1))
+```
+The employer obtain the following about its employees:
+
+1. People without OverTime are generally less affected from Attrition.
+
+2. People with OverTime are safer from Attrition if their MonthlyIncome is > 2475 Dollars.
+
+3. People with lower MonthlyIncome (< 2475 dollars) and with Age < 38 belong to the riskgroup for Attrition.
+
+Note that some of these results where already indicated by the initial exploratory analysis e.g. in plot 1 and 2.
+
+
+Next we derive the prediction for Mdoel D:
+```{r}
+# Testdata selection is analogue to model A since same features where chosen
+dfrmtest_D <- dfrmtest_A
+# Calculate prediction
+result_D <- predict(rpart.fit_D, dfrmtest_D)
+head(result_D)
+```
+The result contains probabilities for the predicted responses for Attrition.
+
+The AUC of Model D is given by:
+```{r}
+auc(test$Attrition, result_D[,'Yes'])
+```
+
+This is a relative poor results compared to the predictivity we obtained using logistic regression.
+
+The final prediction depends on the threshold chosen (just as above in the logistic regression models). Standard would be a threshold of prop = 0.5. But in order to make analysis more comparable to the previously considered regression model, a similar threshold is chosen here (prop = 0.16). The confusion matrix then reads:
+
+```{r}
+confusionmatrix(test$Attrition, result_D[,'Yes'], 0.16)[[1]]
+```
+
+## Model E: A comprehensive tree with implicite feature selection
+
+Next we want to make use of implicite feature selection. Thus model features are not pre-assigned by hand. We start with the most general decision tree model for this dataset by including all features. Later we continue by pruning the tree to an optimal size in order to avoid overfitting of the data. 
+
+The most general tree classification model reads:
+```{r}
+rpart.fit_E <- rpart(Attrition ~., data = train, method ="class")
+rpart.fit_E
+```
+
+For better overview it is nice to visualiye the tree for Model E before pruning:
+```{r, results='hide', fig.keep='all'}
+print(prp(rpart.fit_E, fallen.leaves = TRUE, type=4, extra=1, varlen=0, faclen=0, yesno.yshift=-1))
+```
+
+The next step is to use the complexity parameter (cp) to control the size of the classification tree. The optimal tree size is achieved when the cost of adding another feature to the decision tree from the current node is above the value of cp. In this case the tree building process is not continued.
+
+The values for the complexity parameter read:
+```{r}
+printcp(rpart.fit_E)
+```
+xerror is the cross-validation error (rpart has already a built-in cross validation). 
+
+The xerror can be shown as a function of the complexity parameter: 
+```{r, results='hide', fig.keep='all'}
+print(plotcp(rpart.fit_E))
+```
+
+Generally for pruning one chooses a small tree with the least cross validated error: 
+```{r}
+prune.rpart.fit_E <- prune(rpart.fit_E, cp= rpart.fit_E$cptable[which.min(rpart.fit_E$cptable[,"xerror"]),"CP"])
+```
+
+The pruned tree (Model E) looks then like:
+```{r, results='hide', fig.keep='all'}
+print(prp(prune.rpart.fit_E, fallen.leaves = TRUE, type=4, extra=1, varlen=0, faclen=0, yesno.yshift=-1))
+```
+
+OverTime and MonthlyIncome appear automatically as some of the most important decision features. Note that those features we have already chosen in simple tree of Model D.
+
+Use test data to make prediction:
+```{r}
+dfrmtest_E <- test
+result_E <- predict(rpart.fit_E, dfrmtest_E)
+
+```
+
+
+The AUC of model E is given by:
+```{r}
+auc(test$Attrition, result_E[,'Yes'])
+```
+The model predictivity is improved significantly compared to simple tree (Model D) but cannot reach predictivity of logistic regression.
+
+
+Confusion matrix for Model E (with threshold chosen to be prop = 0.16) is given by:
+```{r}
+confusionmatrix(test$Attrition, result_E[,'Yes'], 0.16)[[1]]
+```
+
+
+# 9. Improve Tree-based Prediction through Random Forest
+
+The predictive performance of decision trees can be improved significantly by aggregating multiple decision trees. Common methods are bagging, random forests, and boosting. The analysis here restricts on random forest. Random forest uses bootstrap aggregation just like bagging,  but extends bagging with additional a variable (and random) feature selection. Random forest helps to reduce the variance compared to a single decision tree. Random forest can also handle dataset with high dimensions well.
+
+## Model F: General Random Forest model
+
+The most general random forest model is given by:
+```{r, results='hide'}
+rf.fit_F <- randomForest(Attrition ~.,  
+                        data = train, replace=TRUE, importance=TRUE, do.trace=4, ntree=100)
+```
+
+Note that the feature selection (mytry) is set to default (close to squareroot of total number of features), which leads to a good fit in this case.
+
+
+
+Visualize reduced out-of-bag error through training on trees:
+```{r}
+plot(rf.fit_F$err.rate[,'OOB'],  xlab = "index", ylab = "OOB Error")
+```
+
+Next we assess the importance of the different features:
+```{r}
+varImpPlot(rf.fit_F, main="Importance of features for Attrition prediction with RandomForest", n.var=10)
+
+```
+
+Next we make the prediction using the test dataset: 
+```{r}
+result_F <- predict(rf.fit_F, test)
+result_prob_F <- predict(rf.fit_F, test, type = "prob")
+```
+
+We specify output depending on the desired result:
+```{r}
+head(result_F)
+head(result_prob_F)
+```
+
+The AUC for the random forest model (Model F) reads:
+```{r}
+auc(test$Attrition, result_prob_F[,'Yes'])
+```
+
+This is a quiet good performance and in the same ballpark the best regression model.
+
+
+# Summary and Outlook
+
+## Summarizing Results and Recommendations
+
+In this analysis we predicted Attrition for employees of a fictional HR database leveraging Machine Learning Tools. 
+
+First we solved this classification problem via logistic regression. By pre-selecting only statistically sigificant coefficients we could come up with a refined logistic regression model (Model C) where the AUC is given by
+```{r}
+auc(test$Attrition, result_C)
+```
+The model has predictive capability to identify indiviual employees that are leaving the company. Further we determined via 10-fold crossvalidation that the model is relatively stable for changes on the dataset.
+
+The most important model drivers (significance > 0.001) have been identified as:
+Age, BusinessTravelTravel, EnvironmentSatisfaction, JobInvolvement, JobSatisfaction, MaritalStatus, MonthlyIncome, NumCompaniesWorked, TimeYes and  YearsSinceLastPromotion
+
+Next we assessed the classification problem using tree-based methods. In this case model features can be implicitly selected without preassessing the data. Best results were obtained using random forest (Model F) with predictabilty comparable to the logistic regression model. In particular the AUC reads
+
+```{r}
+auc(test$Attrition, result_prob_F[,'Yes'])
+```
+
+Top 10 model drivers could be either be selected by highest MeanDecreaseAccuracy or MeanDecreaseGini.
+
+```{r}
+
+fff <- as.data.frame(rf.fit_F$importance)
+cat("Gini Drivers: \n", row.names(fff[order(fff$MeanDecreaseGini, decreasing= T),])[1:10], sep ="\n")
+cat("\n")
+cat("Accuracy Drivers: \n", row.names(fff[order(fff$MeanDecreaseAccuracy, decreasing= T),])[1:10], sep ="\n")
+```
+
+The employer can use information about risk target groups (see tree plots related to tree-based Model D and E) as well as stated above model drivers to improve retention of highly valued employees.
+
+                   
+## Next Steps Towards a Real People Analytics Software
+
+A) Refine machine learning techniques
+- Optimize parameters of assessed models
+
+- Try other machine learning techiques e.g. neural networks
+
+B) Improvement of content:
+- Use a more HR data base with more features and data
+
+- Create more predictions e.g. predict employer performance
+
+C) Improvement of frontend to make a usable model
+- Create an interface for clients to upload data
+
+- Create an automated output for clients e.g. dashboard output
+
+
+
+
