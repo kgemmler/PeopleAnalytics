@@ -3,12 +3,13 @@ title: "People Analytics Toy Model - Predicting Attrition with Machine Learning 
 author: "Katrin Gemmler"
 date: "Dec 2nd, 2018"
 output:
-  html_notebook:
-    toc: yes
-    toc_float: yes
-  html_document:
-    df_print: paged
-    toc: yes
+  github_document
+#  html_notebook:
+#    toc: yes
+#    toc_float: yes
+#  html_document:
+#    df_print: paged
+#    toc: yes
 ---
 # Introduction
 The following analysis is based on a fictional human resource database (Source: IBM Analytics). In particular the dataset includes information about the employee attrition among various other features for employees of the given fictional company. Goal of the following analysis is to predict employees who are leaving the company and identify the main drivers for their leaving. The analysis leverages several machine learning tools such as logistic regression, 10-fold crossvalidation and tree-based analysis methods including random forest.

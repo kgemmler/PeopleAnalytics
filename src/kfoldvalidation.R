@@ -13,7 +13,7 @@ kFoldValidation <- function (nFolds, data, modelformula,threshold) {
   vector_sen <- c()
   vector_spe <- c()
 
-  for(k in 1:nrFolds) 
+  for(k in 1:nFolds) 
   { 
     # for each fold split data into test and training data
     fold <- which(folds == k)
