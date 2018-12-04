@@ -602,7 +602,16 @@ auc(test$Attrition, result_C)
 The model has predictive capability to identify indiviual employees that are leaving the company. Further we determined via 10-fold crossvalidation that the model is relatively stable for changes on the dataset.
 
 The most important model drivers (significance > 0.001) have been identified as:
-Age, BusinessTravelTravel, EnvironmentSatisfaction, JobInvolvement, JobSatisfaction, MaritalStatus, MonthlyIncome, NumCompaniesWorked, TimeYes and  YearsSinceLastPromotion
+Age,
+BusinessTravelTravel,
+EnvironmentSatisfaction,
+JobInvolvement,
+JobSatisfaction,
+MaritalStatus,
+MonthlyIncome,
+NumCompaniesWorked,
+OverTime,
+YearsSinceLastPromotion
 
 Next we assessed the classification problem using tree-based methods. In this case model features can be implicitly selected without preassessing the data. Best results were obtained using random forest (Model F) with predictabilty comparable to the logistic regression model. In particular the AUC reads
 
